@@ -5,57 +5,62 @@
 #include "tftlcd.h"
 
 
-/* 定义数据类型 */
-typedef struct 
+#define TP_PRES_DOWN 0x80  //触屏被按下	  
+#define TP_CATH_PRES 0x40  //有按键按下了 
+#define CT_MAX_TOUCH 10    //电容屏支持的点数,固定为5点
+
+//触摸屏控制器
+typedef struct
 {
-	uint16_t x;
-	uint16_t y;
-    uint16_t lcdx;
-    uint16_t lcdy;
-} TouchTypeDef;
+	u8 (*init)(void);			//初始化触摸屏控制器
+	u8 (*scan)(u8);				//扫描触摸屏.0,屏幕扫描;1,物理坐标;	 
+	void (*adjust)(void);		//触摸屏校准 
+	u16 x[CT_MAX_TOUCH]; 		//当前坐标
+	u16 y[CT_MAX_TOUCH];		//电容屏有最多10组坐标,电阻屏则用x[0],y[0]代表:此次扫描时,触屏的坐标,用
+								//x[9],y[9]存储第一次按下时的坐标. 
+	u16 sta;					//笔的状态 
+								//b15:按下1/松开0; 
+	                            //b14:0,没有按键按下;1,有按键按下. 
+								//b13~b10:保留
+								//b9~b0:电容触摸屏按下的点数(0,表示未按下,1表示按下)
+/////////////////////触摸屏校准参数(电容屏不需要校准)//////////////////////								
+	float xfac;					
+	float yfac;
+	short xoff;
+	short yoff;	   
+//新增的参数,当触摸屏的左右上下完全颠倒时需要用到.
+//b0:0,竖屏(适合左右为X坐标,上下为Y坐标的TP)
+//   1,横屏(适合左右为Y坐标,上下为X坐标的TP) 
+//b1~6:保留.
+//b7:0,电阻屏
+//   1,电容屏 
+	u8 touchtype;
+}_m_tp_dev;
 
-extern TouchTypeDef TouchData;
-
-typedef struct{
-    uint8_t posState;   
-    int16_t xOffset;
-    int16_t yOffset; 
-    float xFactor;
-    float yFactor;
-} PosTypeDef;
-
-
-#define TOUCH_ADJ_OK          'Y'              //表示触摸校正参数准备好
-#define TOUCH_ADJ_ADDR        200          //校正参数在24C02中的首地址200
-/* 触摸校正因数设置 */
-#define LCD_ADJX_MIN (10)                      //读取四个点的最小X值
-#define LCD_ADJX_MAX (tftlcd_data.width - LCD_ADJX_MIN) //读取四个点的最大X值
-#define LCD_ADJY_MIN (10)                      //读取四个点的最小Y值
-#define LCD_ADJY_MAX (tftlcd_data.height - LCD_ADJY_MIN) //读取四个点的最大Y值
-
-#define LCD_ADJ_X (LCD_ADJX_MAX - LCD_ADJY_MIN)//读取方框的宽度
-#define LCD_ADJ_Y (LCD_ADJY_MAX - LCD_ADJY_MIN)//读取方框的高度
-
-#define TOUCH_READ_TIMES 5     //一次读取触摸值的次数
-
-#define TOUCH_X_CMD      0xD0  //读取X轴命令
-#define TOUCH_Y_CMD      0x90  //读取Y轴命令
-#define TOUCH_MAX        20    //预期差值
-#define TOUCH_X_MAX      4000  //X轴最大值
-#define TOUCH_X_MIN      100   //X轴最小值
-#define TOUCH_Y_MAX      4000  //Y轴最大值
-#define TOUCH_Y_MIN      100   //Y轴最小值
-
+extern _m_tp_dev tp_dev;	 	//触屏控制器在touch.c里面定义
 
 //电阻屏芯片连接引脚	   
-#define PEN  		PDin(7)  	//T_PEN
-#define TCS  		PDout(6)  	//T_CS 
+#define PEN     PFin(10)    //T_PEN
+#define DOUT    PBin(2)    	//T_MISO
+#define TDIN    PFout(9)   	//T_MOSI
+#define TCLK    PBout(1)   	//T_SCK
+#define TCS     PFout(11)   //T_CS  
+   
+//电阻屏函数
+void TP_Write_Byte(u8 num);						//向控制芯片写入一个数据
+u16 TP_Read_AD(u8 CMD);							//读取AD转换值
+u16 TP_Read_XOY(u8 xy);							//带滤波的坐标读取(X/Y)
+u8 TP_Read_XY(u16 *x,u16 *y);					//双方向读取(X+Y)
+u8 TP_Read_XY2(u16 *x,u16 *y);					//带加强滤波的双方向坐标读取
+void TP_Drow_Touch_Point(u16 x,u16 y,u16 color);//画一个坐标校准点
+void TP_Draw_Big_Point(u16 x,u16 y,u16 color);	//画一个大点
+void TP_Save_Adjdata(void);						//保存校准参数
+u8 TP_Get_Adjdata(void);						//读取校准参数
+void TP_Adjust(void);							//触摸屏校准
+void TP_Adj_Info_Show(u16 x0,u16 y0,u16 x1,u16 y1,u16 x2,u16 y2,u16 x3,u16 y3,u16 fac);//显示校准信息
+//电阻屏/电容屏 共用函数
+u8 TP_Scan(u8 tp);								//扫描
+u8 TP_Init(void);								//初始化
 
-
-
-void TOUCH_Init(void);
-
-void TOUCH_Adjust(void);
-uint8_t TOUCH_Scan(void);
 
 #endif

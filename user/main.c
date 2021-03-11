@@ -19,7 +19,8 @@ void hardware_prepare(void) {
 	USART1_Init(9600);
 	TFTLCD_Init();			
 	KEY_Init();
-	TOUCH_Init();
+	//TOUCH_Init();
+    TP_Init();
 	TIM3_Init(50,7199);
 	RTC_Init();
 }

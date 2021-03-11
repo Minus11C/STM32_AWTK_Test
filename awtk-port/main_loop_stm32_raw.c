@@ -73,12 +73,12 @@ void dispatch_input_events(void) {
     main_loop_post_key_event(main_loop(), FALSE, key);
   }
 
-  if (TOUCH_Scan() == 0) {
-    main_loop_post_pointer_event(main_loop(), TRUE, TouchData.lcdx,
-                                 TouchData.lcdy);
+  if (TP_Scan(0) == 0) {
+    main_loop_post_pointer_event(main_loop(), TRUE, tp_dev.x[0],
+                                 tp_dev.y[0]);
   } else {
-    main_loop_post_pointer_event(main_loop(), FALSE, TouchData.lcdx,
-                                 TouchData.lcdy);
+    main_loop_post_pointer_event(main_loop(), FALSE, tp_dev.x[0],
+                                 tp_dev.y[0]);
   }
 }
 
